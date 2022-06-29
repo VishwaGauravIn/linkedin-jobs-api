@@ -20,7 +20,7 @@ function Query(queryObj) {
   this.remoteFilter = queryObj.remoteFilter || "";
   this.salary = queryObj.salary || "";
   this.experienceLevel = queryObj.experienceLevel || "";
-
+  this.sortBy = queryObj.sortBy || "";
   //internal variable
   this.limit = Number(queryObj.limit) || 0;
 }
@@ -84,13 +84,6 @@ Query.prototype.getSalary = function () {
   };
   return salaryRange[this.salary.toLowerCase()] ?? "";
 };
-Query.prototype.getSortBy = function () {
-  const sortBy = {
-    recent: "DD",
-    relevant: "R",
-  };
-  return sortBy[this.salary.toLowerCase()] ?? "";
-};
 
 /*
  * EXAMPLE OF A SAMPLE QUERY
@@ -114,7 +107,11 @@ Query.prototype.url = function (start) {
   if (this.getRemoteFilter() !== "") query += `&f_WT=${this.getRemoteFilter()}`;
   if (this.getJobType() !== "") query += `&f_JT=${this.getJobType()}`;
   query += `&start=${start}`;
-  if (this.sortBy !== "") query += `&sortBy=${this.getSortBy}`;
+  if (this.sortBy == "recent" || this.sortBy == "relevant") {
+    let sortMethod = "R";
+    if (this.sortBy == "recent") sortMethod = "DD";
+    query += `&sortBy=${sortMethod}`;
+  }
   return encodeURI(query);
 };
 
