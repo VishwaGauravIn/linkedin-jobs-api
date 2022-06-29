@@ -1,0 +1,27 @@
+{
+  "name": "linkedin-jobs-api",
+  "version": "1.0.0",
+  "description": "advanced node.js package for getting job listings from LinkedIn",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VishwaGauravIn/linkedin-jobs-api.git"
+  },
+  "keywords": [
+    "linkedin",
+    "linkedin-jobs",
+    "jobs",
+    "linkedin-jobs-api",
+    "linkedin-api",
+    "api"
+  ],
+  "author": "VishwaGauravIn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/VishwaGauravIn/linkedin-jobs-api/issues"
+  },
+  "homepage": "https://github.com/VishwaGauravIn/linkedin-jobs-api#readme"
+}
