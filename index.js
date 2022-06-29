@@ -55,10 +55,13 @@ Query.prototype.getExperienceLevel = function(){
 Query.prototype.getJobType = function(){
     const jobTypeRange = {
         'full time': 'F',
+        'full-time': 'F',
         'part time': 'P',
+        'part-time': 'P',
         'contract': 'C',
         'temporary': 'T',
-        'volunteer': 'V'
+        'volunteer': 'V',
+        'internship': 'I'
     }
     return jobTypeRange[this.jobType.toLowerCase()] ?? ''
 }
