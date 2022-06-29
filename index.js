@@ -114,7 +114,7 @@ Query.prototype.url = function (start) {
   if (this.getRemoteFilter() !== "") query += `&f_WT=${this.getRemoteFilter()}`;
   if (this.getJobType() !== "") query += `&f_JT=${this.getJobType()}`;
   query += `&start=${start}`;
-  query += `&sortBy=${this.getSortBy}`;
+  if (this.sortBy !== "") query += `&sortBy=${this.getSortBy}`;
   return encodeURI(query);
 };
 
