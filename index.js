@@ -176,11 +176,17 @@ function parseJobList(jobData) {
           .replace(/\n/g, "")
           .replaceAll(" ", "") || "";
       const jobUrl = job.find(".base-card__full-link").attr("href") || "";
+      const companyLogo =
+        job.find(".artdeco-entity-image").attr("data-ghost-url") || "";
+      const agoTime =
+        job.find(".job-search-card__listdate").text().trim() || "";
       return {
         position: position,
         company: company,
+        companyLogo: companyLogo,
         location: location,
         date: date,
+        agoTime: agoTime,
         salary: salary,
         jobUrl: jobUrl,
       };

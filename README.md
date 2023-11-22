@@ -9,19 +9,23 @@
 </div>
 
 ## Features
+
 - ⚡ Lightening Fast
 - ✨ Minimal
 - 🪶 Lightweight
-- 🔥 Advanced Filters 
+- 🔥 Advanced Filters
 - 🤩 Support all Frameworks
 
 ## How to Install ?
+
 Use npm or yarn to install this npm package
 
 ```
 npm i linkedin-jobs-api
 ```
+
 or
+
 ```
 yarn add linkedin-jobs-api
 ```
@@ -57,28 +61,47 @@ linkedIn.query(queryOptions).then(response => {
 
 query() accepts a _queryOptions_ object and returns an array of _Job_ objects.
 
-| Parameter    | LinkedIn Default value| Description                                                                                    |
-|:-----------:|:---------------------:|:----------------------------------------------------------------------------------------------:| 
-| keyword     |       ""              | _string_ - The text to search: (i.e. Software Developer)                                                           |         
-| location    |       ""              | _string_ - The name of the city: (i.e. Los Angeles)   
-| dateSincePosted|    ""              | _string_ - Max range of jobs: `past month`, `past week`, `24hr`
-| jobType     |       ""              | _string_ - Type of position: `full time`, `part time`, `contract`, `temporary`, `volunteer`, `internship`
-| remoteFilter|       ""              | _string_ - Filter telecommuting: `on site`, `remote`, `hybrid`
-| salary      |       ""              | _string_ - Minimum Salary: `40000`, `60000`, `80000`, `100000`, `120000`
-| experienceLevel|    ""              | _string_ - `internship`, `entry level`, `associate`, `senior`, `director`, `executive`
-| limit       |       ""              | _string_ - Number of jobs returned: (i.e. '1', '10', '100', etc)
-| sortBy       |       ""              | _string_ - `recent`, `relevant`
+|    Parameter    | LinkedIn Default value |                                                Description                                                |
+| :-------------: | :--------------------: | :-------------------------------------------------------------------------------------------------------: |
+|     keyword     |           ""           |                         _string_ - The text to search: (i.e. Software Developer)                          |
+|    location     |           ""           |                            _string_ - The name of the city: (i.e. Los Angeles)                            |
+| dateSincePosted |           ""           |                      _string_ - Max range of jobs: `past month`, `past week`, `24hr`                      |
+|     jobType     |           ""           | _string_ - Type of position: `full time`, `part time`, `contract`, `temporary`, `volunteer`, `internship` |
+|  remoteFilter   |           ""           |                      _string_ - Filter telecommuting: `on site`, `remote`, `hybrid`                       |
+|     salary      |           ""           |                 _string_ - Minimum Salary: `40000`, `60000`, `80000`, `100000`, `120000`                  |
+| experienceLevel |           ""           |          _string_ - `internship`, `entry level`, `associate`, `senior`, `director`, `executive`           |
+|      limit      |           ""           |                     _string_ - Number of jobs returned: (i.e. '1', '10', '100', etc)                      |
+|     sortBy      |           ""           |                                      _string_ - `recent`, `relevant`                                      |
 
 ## Job Objects
 
-| Paramter    | Description (Default: null)                                                                    |
-|:-----------:|:----------------------------------------------------------------------------------------------:| 
-| position    | _string_ - Position title
-| company     | _string_ - Company name
-| location    | _string_ - Location of the job
-| date        | _string_ - Date the job was posted
-| salary      | _string_ - Salary range
-| jobUrl      | _string_ - URL of the job page
+|  Paramter   |     Description (Default: null)     |
+| :---------: | :---------------------------------: |
+|  position   |      _string_ - Position title      |
+|   company   |       _string_ - Company name       |
+| companyLogo |       _string_ - Company Logo       |
+|  location   |   _string_ - Location of the job    |
+|    date     | _string_ - Date the job was posted  |
+|   agoTime   | _string_ - time since it was posted |
+|   salary    |       _string_ - Salary range       |
+|   jobUrl    |   _string_ - URL of the job page    |
+
+## Example Response
+
+```json
+[
+  {
+    "position": "Human Resources Administrator",
+    "company": "The Hub",
+    "companyLogo": "https://static.licdn.com/aero-v1/sc/h/9a9u41thxt325ucfh5z8ga4m8",
+    "location": "India",
+    "date": "2023-11-20",
+    "agoTime": "2 days ago",
+    "salary": "",
+    "jobUrl": "https://in.linkedin.com/jobs/view/human-resources-administrator-at-the-hub-3765436573?refId=rWSjK9izzZ1ZNnUZYzqp8Q%3D%3D&trackingId=X6uox0Xk%2FRQmqkuHpO%2BdrQ%3D%3D&position=1&pageNum=0&trk=public_jobs_jserp-result_search-card"
+  }
+]
+```
 
 ## Contributing
 
