@@ -1,11 +1,11 @@
 <div align="center">
  <h1> <img src="https://www.freepnglogos.com/uploads/linkedin-logo-design-30.png" width="80px"><br/>LinkedIn Jobs API</h1>
- <a href="https://itsvg.in" target="_blank"><img src="https://img.shields.io/badge/Creator-Vishwa%20Gaurav-blue?style=plastic"/></a> 
- <img src="https://img.shields.io/npm/v/linkedin-jobs-api?label=%20&style=plastic"/>
- <img src="https://img.shields.io/npm/dt/linkedin-jobs-api?style=plastic">
- <img src="https://img.shields.io/snyk/vulnerabilities/github/VishwaGauravIn/linkedin-jobs-api?style=plastic"/>
- <img src="https://img.shields.io/badge/License-GPL%20v3-brightgreen?style=plastic"/>
- <img src="https://img.shields.io/github/languages/code-size/VishwaGauravIn/linkedin-jobs-api?logo=github&style=plastic">
+ <a href="https://itsvg.in" target="_blank"><img src="https://img.shields.io/badge/Creator-Vishwa%20Gaurav-blue"/></a> 
+ <img src="https://img.shields.io/npm/v/linkedin-jobs-api?label=%20"/>
+ <img src="https://img.shields.io/npm/dt/linkedin-jobs-api">
+ <img src="https://img.shields.io/snyk/vulnerabilities/github/VishwaGauravIn/linkedin-jobs-api"/>
+ <img src="https://img.shields.io/badge/License-GPL%20v3-brightgreen"/>
+ <img src="https://img.shields.io/github/languages/code-size/VishwaGauravIn/linkedin-jobs-api?logo=github">
 </div>
 
 ## Features

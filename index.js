@@ -13,8 +13,8 @@ function Query(queryObj) {
   this.host = queryObj.host || "www.linkedin.com";
 
   //api handles strings with spaces by replacing the values with %20
-  this.keyword = queryObj.keyword.replace(" ", "+") || "";
-  this.location = queryObj.location.replace(" ", "+") || "";
+  this.keyword = queryObj.keyword?.replace(" ", "+") || "";
+  this.location = queryObj.location?.replace(" ", "+") || "";
   this.dateSincePosted = queryObj.dateSincePosted || "";
   this.jobType = queryObj.jobType || "";
   this.remoteFilter = queryObj.remoteFilter || "";
