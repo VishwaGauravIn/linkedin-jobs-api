@@ -103,6 +103,19 @@ query() accepts a _queryOptions_ object and returns an array of _Job_ objects.
 ]
 ```
 
+## Our Sponsor
+<a href="https://nubela.co/proxycurl?utm_campaign=influencer_marketing&utm_source=github&utm_medium=social&utm_content=vishwagauravin_linkedin-jobs-api" target="_blank"><img src="https://github.com/VishwaGauravIn/linkedin-jobs-api/assets/81325730/afe16626-f05e-421b-a054-6aef1d1aec10" width="200px"/></a>
+
+Scrape public LinkedIn profile data at scale with [Proxycurl APIs](https://nubela.co/proxycurl?utm_campaign=influencer_marketing&utm_source=github&utm_medium=social&utm_content=vishwagauravin_linkedin-jobs-api).
+
+• Scraping Public profiles are battle tested in court in HiQ VS LinkedIn case.<br/>
+• GDPR, CCPA, SOC2 compliant<br/>
+• High rate limit - 300 requests/minute<br/>
+• Fast - APIs respond in ~2s<br/>
+• Fresh data - 88% of data is scraped real-time, other 12% are not older than 29 days<br/>
+• High accuracy<br/>
+• Tons of data points returned per profile
+
 ## Contributing
 
 Feel free to contribute!
