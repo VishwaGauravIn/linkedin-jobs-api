@@ -1,7 +1,7 @@
 const linkedIn = require("./index");
 
 const queryOptions = {
-  keyword: "HR",
+  keyword: "",
   location: "India",
   dateSincePosted: "past Week",
   jobType: "full time",
