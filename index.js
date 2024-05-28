@@ -177,7 +177,7 @@ function parseJobList(jobData) {
           .replaceAll(" ", "") || "";
       const jobUrl = job.find(".base-card__full-link").attr("href") || "";
       const companyLogo =
-        job.find(".artdeco-entity-image").attr("data-ghost-url") || "";
+        job.find(".artdeco-entity-image").attr("data-delayed-url") || "";
       const agoTime =
         job.find(".job-search-card__listdate").text().trim() || "";
       return {
