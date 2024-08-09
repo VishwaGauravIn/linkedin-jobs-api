@@ -1,5 +1,6 @@
 const cheerio = require("cheerio");
 const axios = require("axios");
+const randomUseragent = require("random-useragent");
 
 module.exports.query = (queryObject) => {
   const query = new Query(queryObject);
@@ -102,10 +103,11 @@ Query.prototype.getJobs = async function () {
       allJobs = [];
 
     while (resultCount > 0) {
+      const userAgent = randomUseragent.getRandom();
+
       const { data } = await axios.get(this.url(start), {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+          "User-Agent": userAgent,
           Accept:
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
           "Accept-Language": "en-US,en;q=0.9",
