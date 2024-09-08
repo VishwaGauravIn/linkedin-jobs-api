@@ -49,7 +49,8 @@ const queryOptions = {
   remoteFilter: 'remote',
   salary: '100000',
   experienceLevel: 'entry level',
-  limit: '10'
+  limit: '10',
+  page: "0",
 };
 
 linkedIn.query(queryOptions).then(response => {
@@ -72,7 +73,7 @@ query() accepts a _queryOptions_ object and returns an array of _Job_ objects.
 | experienceLevel |           ""           |          _string_ - `internship`, `entry level`, `associate`, `senior`, `director`, `executive`           |
 |      limit      |           ""           |                     _string_ - Number of jobs returned: (i.e. '1', '10', '100', etc)                      |
 |     sortBy      |           ""           |                                      _string_ - `recent`, `relevant`                                      |
-
+|     page      |           "0"           |                                      _string_ - `0`, `1`, `2` ....                                      |
 ## Job Objects
 
 |  Paramter   |     Description (Default: null)     |

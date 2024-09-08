@@ -19,6 +19,7 @@ function Query(queryObj) {
   this.experienceLevel = queryObj.experienceLevel || "";
   this.sortBy = queryObj.sortBy || "";
   this.limit = Number(queryObj.limit) || 0;
+  this.page = Number(queryObj.page) || 0;
 }
 
 Query.prototype.getDateSincePosted = function () {
@@ -74,6 +75,9 @@ Query.prototype.getSalary = function () {
   return salaryRange[this.salary.toLowerCase()] ?? "";
 };
 
+Query.prototype.getPage = function () {
+  return this.page * 25;
+};
 Query.prototype.url = function (start) {
   let query = `https://${this.host}/jobs-guest/jobs/api/seeMoreJobPostings/search?`;
   if (this.keyword !== "") query += `keywords=${this.keyword}`;
@@ -85,7 +89,7 @@ Query.prototype.url = function (start) {
     query += `&f_E=${this.getExperienceLevel()}`;
   if (this.getRemoteFilter() !== "") query += `&f_WT=${this.getRemoteFilter()}`;
   if (this.getJobType() !== "") query += `&f_JT=${this.getJobType()}`;
-  query += `&start=${start}`;
+  if (this.getPage() !== "") query += `&start=${start + this.getPage()};`;
   if (this.sortBy == "recent" || this.sortBy == "relevant") {
     let sortMethod = "R";
     if (this.sortBy == "recent") sortMethod = "DD";

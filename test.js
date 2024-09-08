@@ -10,6 +10,7 @@ const queryOptions = {
   experienceLevel: "entry level",
   limit: "1",
   sortBy: "recent",
+  page: "1",
 };
 
 linkedIn.query(queryOptions).then((response) => {
