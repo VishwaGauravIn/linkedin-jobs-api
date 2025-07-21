@@ -63,8 +63,8 @@ function Query(queryObj) {
   this.salary = queryObj.salary || "";
   this.experienceLevel = queryObj.experienceLevel || "";
   this.sortBy = queryObj.sortBy || "";
-  this.limit = Number(queryObj.limit) || 0;
-  this.page = Number(queryObj.page) || 0;
+  this.limit = +queryObj.limit || 0;
+  this.page = +queryObj.page || 0;
   this.has_verification = queryObj.has_verification || false;
   this.under_10_applicants = queryObj.under_10_applicants || false;
 }
@@ -116,14 +116,15 @@ Query.prototype.getRemoteFilter = function () {
 };
 
 Query.prototype.getSalary = function () {
-  const salaryRange = {
-    40000: "1",
-    60000: "2",
-    80000: "3",
-    100000: "4",
-    120000: "5",
-  };
-  return salaryRange[this.salary] || "";
+  const salary = this.salary;
+
+  if (salary <= 40000) return "1";
+  if (salary <= 60000) return "2";
+  if (salary <= 80000) return "3";
+  if (salary <= 100000) return "4";
+  if (salary <= 120000) return "5";
+
+  return ""; // or maybe "6+" if it's above all ranges
 };
 
 Query.prototype.getHasVerification = function () {
@@ -139,31 +140,37 @@ Query.prototype.getPage = function () {
 };
 
 Query.prototype.url = function (start) {
-  let query = `https://${this.host}/jobs-guest/jobs/api/seeMoreJobPostings/search?`;
-
+  const query = `https://${this.host}/jobs-guest/jobs/api/seeMoreJobPostings/search?`;
   const params = new URLSearchParams();
+
+  const date = this.getDateSincePosted();
+  const salary = this.getSalary();
+  const exp = this.getExperienceLevel();
+  const remote = this.getRemoteFilter();
+  const jobType = this.getJobType();
+  const verified = this.getHasVerification();
+  const under10 = this.getUnder10Applicants();
+  const sort = this.sortBy;
 
   if (this.keyword) params.append("keywords", this.keyword);
   if (this.location) params.append("location", this.location);
-  if (this.getDateSincePosted())
-    params.append("f_TPR", this.getDateSincePosted());
-  if (this.getSalary()) params.append("f_SB2", this.getSalary());
-  if (this.getExperienceLevel())
-    params.append("f_E", this.getExperienceLevel());
-  if (this.getRemoteFilter()) params.append("f_WT", this.getRemoteFilter());
-  if (this.getJobType()) params.append("f_JT", this.getJobType());
-  if (this.getHasVerification())
-    params.append("f_VJ", this.getHasVerification());
-  if (this.getUnder10Applicants())
-    params.append("f_EA", this.getUnder10Applicants());
+  if (date) params.append("f_TPR", date);
+  if (salary) params.append("f_SB2", salary);
+  if (exp) params.append("f_E", exp);
+  if (remote) params.append("f_WT", remote);
+  if (jobType) params.append("f_JT", jobType);
+  if (verified) params.append("f_VJ", verified);
+  if (under10) params.append("f_EA", under10);
 
   params.append("start", start + this.getPage());
 
-  if (this.sortBy === "recent") params.append("sortBy", "DD");
-  else if (this.sortBy === "relevant") params.append("sortBy", "R");
+  if (sort === "recent") params.append("sortBy", "DD");
+  else if (sort === "relevant") params.append("sortBy", "R");
 
   return query + params.toString();
 };
+
+
 
 Query.prototype.getJobs = async function () {
   let allJobs = [];
