@@ -3,8 +3,15 @@
   "version": "1.0.7",
   "description": "advanced node.js package for getting job listings from LinkedIn",
   "main": "index.js",
+  "bin": {
+    "linkedin-jobs-mcp": "mcp-server.js"
+  },
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "mcp:start": "node mcp-server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "repository": {
     "type": "git",
@@ -25,8 +32,10 @@
   },
   "homepage": "https://github.com/VishwaGauravIn/linkedin-jobs-api#readme",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^0.27.2",
     "cheerio": "^1.0.0-rc.12",
-    "random-useragent": "^0.5.0"
+    "random-useragent": "^0.5.0",
+    "zod": "^3.25.76"
   }
 }

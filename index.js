@@ -55,6 +55,7 @@ module.exports.query = (queryObject) => {
 // Query constructor
 function Query(queryObj) {
   this.host = queryObj.host || "www.linkedin.com";
+  this.logger = queryObj.logger || console;
   this.keyword = queryObj.keyword?.trim().replace(/\s+/g, "+") || "";
   this.location = queryObj.location?.trim().replace(/\s+/g, "+") || "";
   this.dateSincePosted = queryObj.dateSincePosted || "";
@@ -127,11 +128,11 @@ Query.prototype.getSalary = function () {
 };
 
 Query.prototype.getHasVerification = function () {
-  return this.has_verification ? "true" : "false";
+  return this.has_verification ? "true" : "";
 };
 
 Query.prototype.getUnder10Applicants = function () {
-  return this.under_10_applicants ? "true" : "false";
+  return this.under_10_applicants ? "true" : "";
 };
 
 Query.prototype.getPage = function () {
@@ -172,14 +173,14 @@ Query.prototype.getJobs = async function () {
   let hasMore = true;
   let consecutiveErrors = 0;
   const MAX_CONSECUTIVE_ERRORS = 3;
-  console.log(this.url());
-  console.log(this.getCacheKey());
+  this.logger.log(this.url());
+  this.logger.log(this.getCacheKey());
   try {
     // Check cache first
     const cacheKey = this.getCacheKey();
     const cachedJobs = cache.get(cacheKey);
     if (cachedJobs) {
-      console.log("Returning cached results");
+      this.logger.log("Returning cached results");
       return cachedJobs;
     }
 
@@ -193,7 +194,7 @@ Query.prototype.getJobs = async function () {
         }
 
         allJobs.push(...jobs);
-        console.log(`Fetched ${jobs.length} jobs. Total: ${allJobs.length}`);
+        this.logger.log(`Fetched ${jobs.length} jobs. Total: ${allJobs.length}`);
 
         if (this.limit && allJobs.length >= this.limit) {
           allJobs = allJobs.slice(0, this.limit);
@@ -208,13 +209,13 @@ Query.prototype.getJobs = async function () {
         await delay(2000 + Math.random() * 1000);
       } catch (error) {
         consecutiveErrors++;
-        console.error(
+        this.logger.error(
           `Error fetching batch (attempt ${consecutiveErrors}):`,
           error.message
         );
 
         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-          console.log("Max consecutive errors reached. Stopping.");
+          this.logger.log("Max consecutive errors reached. Stopping.");
           break;
         }
 
@@ -230,7 +231,7 @@ Query.prototype.getJobs = async function () {
 
     return allJobs;
   } catch (error) {
-    console.error("Fatal error in job fetching:", error);
+    this.logger.error("Fatal error in job fetching:", error);
     throw error;
   }
 };
@@ -260,7 +261,7 @@ Query.prototype.fetchJobBatch = async function (start) {
       timeout: 10000,
     });
 
-    return parseJobList(response.data);
+    return parseJobList(response.data, this.logger);
   } catch (error) {
     if (error.response?.status === 429) {
       throw new Error("Rate limit reached");
@@ -269,7 +270,7 @@ Query.prototype.fetchJobBatch = async function (start) {
   }
 };
 
-function parseJobList(jobData) {
+function parseJobList(jobData, logger = console) {
   try {
     const $ = cheerio.load(jobData);
     const jobs = $("li");
@@ -310,14 +311,14 @@ function parseJobList(jobData) {
             agoTime: agoTime || "",
           };
         } catch (err) {
-          console.warn(`Error parsing job at index ${index}:`, err.message);
+          logger.warn(`Error parsing job at index ${index}:`, err.message);
           return null;
         }
       })
       .get()
       .filter(Boolean);
   } catch (error) {
-    console.error("Error parsing job list:", error);
+    logger.error("Error parsing job list:", error);
     return [];
   }
 }

@@ -60,6 +60,61 @@ linkedIn.query(queryOptions).then(response => {
 });
 ```
 
+## MCP Server Support
+
+This package now includes a Model Context Protocol (MCP) server entrypoint using the official `@modelcontextprotocol/sdk`.
+
+> **Note:** The MCP server requires **Node.js 18 or later**, as required by `@modelcontextprotocol/sdk`.
+
+### Run from this repository (recommended for development)
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the MCP server over stdio:
+
+```bash
+npm run mcp:start
+```
+
+### Run from an npm install (without cloning)
+
+If you are consuming this package from another project, start the MCP server with the published CLI command:
+
+```bash
+npx linkedin-jobs-mcp
+```
+
+### Available MCP Tool
+
+- `search-linkedin-jobs`: Search LinkedIn jobs with filters and return matching jobs.
+
+### Tool Input Fields
+
+The tool accepts the same filters as `query()`:
+
+- `keyword` (string)
+- `location` (string)
+- `dateSincePosted` (`24hr` | `past week` | `past month`)
+- `jobType` (`full time` | `part time` | `contract` | `temporary` | `volunteer` | `internship`)
+- `remoteFilter` (`on-site` | `on site` | `remote` | `hybrid`)
+- `salary` (`40000` | `60000` | `80000` | `100000` | `120000`)
+- `experienceLevel` (`internship` | `entry level` | `associate` | `senior` | `director` | `executive`)
+- `limit` (number, 1-100)
+- `page` (number, 0+)
+- `sortBy` (`recent` | `relevant`)
+- `has_verification` (boolean)
+- `under_10_applicants` (boolean)
+
+### Notes
+
+- The MCP server wraps the same scraper logic used by `query()`.
+- LinkedIn may rate-limit requests; in that case the tool returns an error message.
+- Results include a short summary and a JSON payload of jobs.
+
 ## Query Object Parameters
 
 query() accepts a _queryOptions_ object and returns an array of _Job_ objects.
