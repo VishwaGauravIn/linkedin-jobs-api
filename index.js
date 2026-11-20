@@ -5,6 +5,75 @@ const randomUseragent = require("random-useragent");
 // Utility functions
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function getRequestHeaders(host = "www.linkedin.com") {
+  return {
+    "User-Agent": randomUseragent.getRandom(),
+    Accept: "application/json, text/javascript, */*; q=0.01",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    Referer: `https://${host}/jobs`,
+    "X-Requested-With": "XMLHttpRequest",
+    Connection: "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "Cache-Control": "no-cache",
+    Pragma: "no-cache",
+  };
+}
+
+function extractJobId(jobUrl) {
+  if (!jobUrl || typeof jobUrl !== "string") {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(jobUrl);
+    const pathMatch = parsed.pathname.match(
+      /\/jobs\/view\/(?:[^/]*-)?(\d+)(?:\/|$)/
+    );
+    if (pathMatch) {
+      return pathMatch[1];
+    }
+
+    const currentJobId = parsed.searchParams.get("currentJobId");
+    if (currentJobId && /^\d+$/.test(currentJobId)) {
+      return currentJobId;
+    }
+
+    return null;
+  } catch {
+    const match = jobUrl.match(/\/jobs\/view\/(?:[^/?#]*-)?(\d+)(?:[/?#]|$)/);
+    return match ? match[1] : null;
+  }
+}
+
+function extractDescriptionText(html) {
+  if (!html || typeof html !== "string") {
+    return "";
+  }
+
+  const $ = cheerio.load(html);
+  const container = $(".show-more-less-html__markup").first();
+  if (!container.length) {
+    return "";
+  }
+
+  container.find("script, style").remove();
+  container.find("br").replaceWith("\n");
+  container.find("p, div, li, h1, h2, h3, h4, h5, h6").each((_, el) => {
+    $(el).prepend("\n").append("\n");
+  });
+
+  return container
+    .text()
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t\u00a0]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
 // Cache implementation
 class JobCache {
   constructor() {
@@ -43,7 +112,8 @@ const cache = new JobCache();
 
 // Generate a unique cache key based on the query parameters
 Query.prototype.getCacheKey = function () {
-  return `${this.url(0)}_limit:${this.limit}`;
+  const baseKey = `${this.url(0)}_limit:${this.limit}`;
+  return this.includeDescriptions ? `${baseKey}_desc:true` : baseKey;
 };
 
 // Main query function
@@ -67,7 +137,9 @@ function Query(queryObj) {
   this.page = Number(queryObj.page) || 0;
   this.has_verification = queryObj.has_verification || false;
   this.under_10_applicants = queryObj.under_10_applicants || false;
-  this.includeDescriptions = queryObj.includeDescriptions || false;
+  this.includeDescriptions =
+    queryObj.includeDescriptions === true ||
+    queryObj.includeDescriptions === "true";
 }
 
 // Query prototype methods
@@ -224,6 +296,10 @@ Query.prototype.getJobs = async function () {
       }
     }
 
+    if (this.includeDescriptions && allJobs.length > 0) {
+      await this.enrichWithDescriptions(allJobs);
+    }
+
     // Cache results if we got any
     if (allJobs.length > 0) {
       cache.set(this.getCacheKey(), allJobs);
@@ -237,20 +313,7 @@ Query.prototype.getJobs = async function () {
 };
 
 Query.prototype.fetchJobBatch = async function (start) {
-  const headers = {
-    "User-Agent": randomUseragent.getRandom(),
-    Accept: "application/json, text/javascript, */*; q=0.01",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    Referer: "https://www.linkedin.com/jobs",
-    "X-Requested-With": "XMLHttpRequest",
-    Connection: "keep-alive",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-    "Cache-Control": "no-cache",
-    Pragma: "no-cache",
-  };
+  const headers = getRequestHeaders(this.host);
 
   try {
     const response = await axios.get(this.url(start), {
@@ -261,7 +324,7 @@ Query.prototype.fetchJobBatch = async function (start) {
       timeout: 10000,
     });
 
-    return parseJobList(response.data, this.includeDescriptions);
+    return parseJobList(response.data);
   } catch (error) {
     if (error.response?.status === 429) {
       throw new Error("Rate limit reached");
@@ -270,60 +333,104 @@ Query.prototype.fetchJobBatch = async function (start) {
   }
 };
 
-async function getJobDescription(jobUrl) {
-  const jobId = jobUrl.match(/\/jobs\/view\/(?:.*-)?(\d+)/)?.[1];
-
+Query.prototype.fetchJobDescription = async function (jobUrl) {
+  const jobId = extractJobId(jobUrl);
   if (!jobId) {
-    return "No description";
+    return { description: "", rateLimited: false };
   }
 
-  const url = `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`;
+  const url = `https://${this.host}/jobs-guest/jobs/api/jobPosting/${jobId}`;
+  const MAX_RETRIES = 3;
 
-  const headers = {
-    "User-Agent": randomUseragent.getRandom(),
-    Accept: "application/json, text/javascript, */*; q=0.01",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    Referer: "https://www.linkedin.com/jobs",
-    "X-Requested-With": "XMLHttpRequest",
-    Connection: "keep-alive",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-    "Cache-Control": "no-cache",
-    Pragma: "no-cache"
-  }
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await axios.get(url, {
+        headers: getRequestHeaders(this.host),
+        validateStatus: function (status) {
+          return status === 200;
+        },
+        timeout: 10000,
+      });
 
-  try {
-    const response = await axios.get(url, {
-      headers,
-      validateStatus: function(status) {
-        return status === 200;
-      },
-      timeout: 10000,
-    });
+      return {
+        description: extractDescriptionText(response.data),
+        rateLimited: false,
+      };
+    } catch (error) {
+      const status = error.response?.status;
 
-    const data = await response.data;
-    const $ = cheerio.load(data);
-    const description = $(".show-more-less-html__markup").text().trim();
+      // Don't retry permanent client errors (e.g., expired or removed job posting)
+      if (status === 404 || status === 410) {
+        return { description: "", rateLimited: false };
+      }
 
-    return description;
+      const isRateLimit = status === 429;
+      if (attempt < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+        await delay(backoffMs);
+        continue;
+      }
 
-  } catch (error) {
-    if (error.response?.status === 429) {
-      throw new Error("Rate limit reached");
+      console.warn(
+        `Error fetching job description for job ${jobId}:`,
+        isRateLimit ? "Rate limit reached" : error.message
+      );
+      return { description: "", rateLimited: isRateLimit };
     }
-    throw error;
   }
-}
 
-async function parseJobList(jobData, includeDescriptions) {
+  return { description: "", rateLimited: false };
+};
+
+Query.prototype.enrichWithDescriptions = async function (jobs) {
+  const MAX_CONSECUTIVE_RATE_LIMITS = 3;
+  let consecutiveRateLimits = 0;
+  let hasFetched = false;
+
+  for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
+
+    if (consecutiveRateLimits >= MAX_CONSECUTIVE_RATE_LIMITS) {
+      job.description = "";
+      continue;
+    }
+
+    const jobId = extractJobId(job.jobUrl);
+    if (!jobId) {
+      job.description = "";
+      continue;
+    }
+
+    if (hasFetched) {
+      await delay(1000 + Math.random() * 500);
+    }
+    hasFetched = true;
+
+    const { description, rateLimited } = await this.fetchJobDescription(
+      job.jobUrl
+    );
+    job.description = description;
+
+    if (rateLimited) {
+      consecutiveRateLimits++;
+      if (consecutiveRateLimits >= MAX_CONSECUTIVE_RATE_LIMITS) {
+        console.warn(
+          "Max consecutive rate limits reached while fetching descriptions. Skipping remaining descriptions."
+        );
+      }
+    } else {
+      consecutiveRateLimits = 0;
+    }
+  }
+};
+
+function parseJobList(jobData) {
   try {
     const $ = cheerio.load(jobData);
     const jobs = $("li");
 
-    const parsedJobs = await Promise.all(
-      jobs.map(async (index, element) => {
+    return jobs
+      .map((index, element) => {
         try {
           const job = $(element);
           const position = job.find(".base-search-card__title").text().trim();
@@ -341,14 +448,13 @@ async function parseJobList(jobData, includeDescriptions) {
             .find(".artdeco-entity-image")
             .attr("data-delayed-url");
           const agoTime = job.find(".job-search-card__listdate").text().trim();
-          let description = "";
 
           // Only return job if we have at least position and company
           if (!position || !company) {
             return null;
           }
 
-          let data = {
+          return {
             position,
             company,
             location,
@@ -357,23 +463,14 @@ async function parseJobList(jobData, includeDescriptions) {
             jobUrl: jobUrl || "",
             companyLogo: companyLogo || "",
             agoTime: agoTime || "",
-          }
-
-          if (includeDescriptions) {
-            description = await getJobDescription(jobUrl);
-            data = {...data, description: description};
-          }
-
-          return data;
+          };
         } catch (err) {
           console.warn(`Error parsing job at index ${index}:`, err.message);
           return null;
         }
-      }).get()
-    );
-
-    return parsedJobs.filter(Boolean);
-
+      })
+      .get()
+      .filter(Boolean);
   } catch (error) {
     console.error("Error parsing job list:", error);
     return [];

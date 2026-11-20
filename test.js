@@ -13,8 +13,8 @@ const queryOptions = {
   page: "1",
   has_verification: false,
   under_10_applicants: false,
-  includeDescriptions: true
-}
+  includeDescriptions: false,
+};
 
 linkedIn.query(queryOptions).then((response) => {
   console.log(response); // An array of Job objects

@@ -53,6 +53,7 @@ const queryOptions = {
   page: "0",
   has_verification: false,
   under_10_applicants: false,
+  includeDescriptions: false,
 };
 
 linkedIn.query(queryOptions).then(response => {
@@ -78,6 +79,7 @@ query() accepts a _queryOptions_ object and returns an array of _Job_ objects.
 |     page      |           "0"           |                                      _string_ - `0`, `1`, `2` ....                                         |
 |has_verification |         `false`        |                                     _boolean_ - `true` / `false`                                          |
 | under_10_applicants | `false`            | _boolean_ `true` / `false`                                                                                |
+| includeDescriptions | `false`            | _boolean_ - Fetch full job description for each returned job (`true` / `false`)                           |
 ## Job Objects
 
 |  Paramter   |     Description (Default: null)     |
@@ -90,6 +92,7 @@ query() accepts a _queryOptions_ object and returns an array of _Job_ objects.
 |   agoTime   | _string_ - time since it was posted |
 |   salary    |       _string_ - Salary range       |
 |   jobUrl    |   _string_ - URL of the job page    |
+| description | _string_ - Full job description (only included when `includeDescriptions` is `true`) |
 
 ## Example Response
 
