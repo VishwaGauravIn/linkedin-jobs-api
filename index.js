@@ -5,6 +5,75 @@ const randomUseragent = require("random-useragent");
 // Utility functions
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function getRequestHeaders(host = "www.linkedin.com") {
+  return {
+    "User-Agent": randomUseragent.getRandom(),
+    Accept: "application/json, text/javascript, */*; q=0.01",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    Referer: `https://${host}/jobs`,
+    "X-Requested-With": "XMLHttpRequest",
+    Connection: "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "Cache-Control": "no-cache",
+    Pragma: "no-cache",
+  };
+}
+
+function extractJobId(jobUrl) {
+  if (!jobUrl || typeof jobUrl !== "string") {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(jobUrl);
+    const pathMatch = parsed.pathname.match(
+      /\/jobs\/view\/(?:[^/]*-)?(\d+)(?:\/|$)/
+    );
+    if (pathMatch) {
+      return pathMatch[1];
+    }
+
+    const currentJobId = parsed.searchParams.get("currentJobId");
+    if (currentJobId && /^\d+$/.test(currentJobId)) {
+      return currentJobId;
+    }
+
+    return null;
+  } catch {
+    const match = jobUrl.match(/\/jobs\/view\/(?:[^/?#]*-)?(\d+)(?:[/?#]|$)/);
+    return match ? match[1] : null;
+  }
+}
+
+function extractDescriptionText(html) {
+  if (!html || typeof html !== "string") {
+    return "";
+  }
+
+  const $ = cheerio.load(html);
+  const container = $(".show-more-less-html__markup").first();
+  if (!container.length) {
+    return "";
+  }
+
+  container.find("script, style").remove();
+  container.find("br").replaceWith("\n");
+  container.find("p, div, li, h1, h2, h3, h4, h5, h6").each((_, el) => {
+    $(el).prepend("\n").append("\n");
+  });
+
+  return container
+    .text()
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t\u00a0]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
 // Cache implementation
 class JobCache {
   constructor() {
@@ -43,7 +112,8 @@ const cache = new JobCache();
 
 // Generate a unique cache key based on the query parameters
 Query.prototype.getCacheKey = function () {
-  return `${this.url(0)}_limit:${this.limit}`;
+  const baseKey = `${this.url(0)}_limit:${this.limit}`;
+  return this.includeDescriptions ? `${baseKey}_desc:true` : baseKey;
 };
 
 // Main query function
@@ -67,6 +137,9 @@ function Query(queryObj) {
   this.page = Number(queryObj.page) || 0;
   this.has_verification = queryObj.has_verification || false;
   this.under_10_applicants = queryObj.under_10_applicants || false;
+  this.includeDescriptions =
+    queryObj.includeDescriptions === true ||
+    queryObj.includeDescriptions === "true";
 }
 
 // Query prototype methods
@@ -223,6 +296,10 @@ Query.prototype.getJobs = async function () {
       }
     }
 
+    if (this.includeDescriptions && allJobs.length > 0) {
+      await this.enrichWithDescriptions(allJobs);
+    }
+
     // Cache results if we got any
     if (allJobs.length > 0) {
       cache.set(this.getCacheKey(), allJobs);
@@ -236,20 +313,7 @@ Query.prototype.getJobs = async function () {
 };
 
 Query.prototype.fetchJobBatch = async function (start) {
-  const headers = {
-    "User-Agent": randomUseragent.getRandom(),
-    Accept: "application/json, text/javascript, */*; q=0.01",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    Referer: "https://www.linkedin.com/jobs",
-    "X-Requested-With": "XMLHttpRequest",
-    Connection: "keep-alive",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-    "Cache-Control": "no-cache",
-    Pragma: "no-cache",
-  };
+  const headers = getRequestHeaders(this.host);
 
   try {
     const response = await axios.get(this.url(start), {
@@ -266,6 +330,97 @@ Query.prototype.fetchJobBatch = async function (start) {
       throw new Error("Rate limit reached");
     }
     throw error;
+  }
+};
+
+Query.prototype.fetchJobDescription = async function (jobUrl) {
+  const jobId = extractJobId(jobUrl);
+  if (!jobId) {
+    return { description: "", rateLimited: false };
+  }
+
+  const url = `https://${this.host}/jobs-guest/jobs/api/jobPosting/${jobId}`;
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await axios.get(url, {
+        headers: getRequestHeaders(this.host),
+        validateStatus: function (status) {
+          return status === 200;
+        },
+        timeout: 10000,
+      });
+
+      return {
+        description: extractDescriptionText(response.data),
+        rateLimited: false,
+      };
+    } catch (error) {
+      const status = error.response?.status;
+
+      // Don't retry permanent client errors (e.g., expired or removed job posting)
+      if (status === 404 || status === 410) {
+        return { description: "", rateLimited: false };
+      }
+
+      const isRateLimit = status === 429;
+      if (attempt < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+        await delay(backoffMs);
+        continue;
+      }
+
+      console.warn(
+        `Error fetching job description for job ${jobId}:`,
+        isRateLimit ? "Rate limit reached" : error.message
+      );
+      return { description: "", rateLimited: isRateLimit };
+    }
+  }
+
+  return { description: "", rateLimited: false };
+};
+
+Query.prototype.enrichWithDescriptions = async function (jobs) {
+  const MAX_CONSECUTIVE_RATE_LIMITS = 3;
+  let consecutiveRateLimits = 0;
+  let hasFetched = false;
+
+  for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
+
+    if (consecutiveRateLimits >= MAX_CONSECUTIVE_RATE_LIMITS) {
+      job.description = "";
+      continue;
+    }
+
+    const jobId = extractJobId(job.jobUrl);
+    if (!jobId) {
+      job.description = "";
+      continue;
+    }
+
+    if (hasFetched) {
+      await delay(1000 + Math.random() * 500);
+    }
+    hasFetched = true;
+
+    const { description, rateLimited } = await this.fetchJobDescription(
+      job.jobUrl
+    );
+    job.description = description;
+
+    if (rateLimited) {
+      consecutiveRateLimits++;
+      if (consecutiveRateLimits >= MAX_CONSECUTIVE_RATE_LIMITS) {
+        console.warn(
+          "Max consecutive rate limits reached while fetching descriptions. Skipping remaining descriptions."
+        );
+      }
+    } else {
+      consecutiveRateLimits = 0;
+    }
   }
 };
 

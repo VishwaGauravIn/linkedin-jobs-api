@@ -13,6 +13,7 @@ const queryOptions = {
   page: "1",
   has_verification: false,
   under_10_applicants: false,
+  includeDescriptions: false,
 };
 
 linkedIn.query(queryOptions).then((response) => {
